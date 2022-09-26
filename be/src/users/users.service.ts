@@ -15,7 +15,7 @@ export class UsersService {
     });
   }
 
-  async create(data) {
-    await this.userModel.create(data);
+  async create(user) {
+    await this.userModel.create(user);
   }
 }

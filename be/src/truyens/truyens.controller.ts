@@ -3,10 +3,10 @@ import { ApiTags } from '@nestjs/swagger';
 import { AtGuard } from 'src/auth/guards/at.guard';
 import { GetUser } from 'src/users/decorators/get-user.decorator';
 import { User } from 'src/users/schemas/user.schema';
-import {
-  BinhLuanTruyenDto,
-  ReplyBinhLuanDto,
-} from './dto/binh-luan-truyen.dto';
+import { BinhLuanTruyenDto } from './dto/binh-luan-truyen.dto';
+import { DanhGiaTruyenDto } from './dto/danh-gia-truyen.dto';
+import { LikeBinhLuanDto } from './dto/like-binh-luan.dto';
+import { LikeTruyenDto } from './dto/like-truyen.dto';
 import { TruyensService } from './truyens.service';
 
 @ApiTags('truyens')
@@ -53,19 +53,36 @@ export class TruyensController {
     );
   }
 
-  @Post('reply-binh-luan')
+  @Post('like-binh-luan')
   @UseGuards(AtGuard)
-  async replyBinhLuan(@GetUser() user: User, @Body() body: ReplyBinhLuanDto) {
-    return await this.truyensService.replyBinhLuan(
-      user,
-      body.slug,
-      body._id,
-      body.content,
-    );
+  async likeBinhLuan(@GetUser() user: User, @Body() body: LikeBinhLuanDto) {
+    return await this.truyensService.likeBinhLuan(user, body.slug, body._id);
+  }
+
+  @Post('like-truyen')
+  @UseGuards(AtGuard)
+  async likeTruyen(@GetUser() user: User, @Body() body: LikeTruyenDto) {
+    return await this.truyensService.likeTruyen(user, body.slug);
+  }
+
+  @Post('danh-gia-truyen')
+  @UseGuards(AtGuard)
+  async danhGiaTruyen(@GetUser() user: User, @Body() body: DanhGiaTruyenDto) {
+    return await this.truyensService.danhGiaTruyen(user, body.slug, body.soSao);
   }
 
   @Get('doc-truyen')
   async docTruyen(@Query() query) {
     return await this.truyensService.docTruyen(query.slug, query.chuongSo);
+  }
+
+  @Get('bxh')
+  async getBxh(@Query() query) {
+    return await this.truyensService.getBxh(query.page, query.sortBy);
+  }
+
+  @Get('tim-kiem')
+  async timKiem(@Query() query) {
+    return await this.truyensService.timKiem(query.keyword, query.page);
   }
 }

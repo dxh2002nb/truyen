@@ -1,9 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class BinhLuanTruyenDto {
-  @IsString()
-  content: string;
-
+export class LikeTruyenDto {
   @IsString()
   slug: string;
 }

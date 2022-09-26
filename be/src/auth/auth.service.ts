@@ -12,18 +12,15 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signUp(signUpDto: SignUpDto): Promise<string> {
-    const userWithName = await this.usersService.findOne(
-      'name',
-      signUpDto.name,
-    );
+  async signUp(signUp: SignUpDto): Promise<string> {
+    const userWithName = await this.usersService.findOne('name', signUp.name);
     if (userWithName) {
       throw new BadRequestException('Tên đã tồn tại, vui lòng nhập tên khác');
     }
 
     const userWithUsername = await this.usersService.findOne(
       'username',
-      signUpDto.username,
+      signUp.username,
     );
     if (userWithUsername) {
       throw new BadRequestException(
@@ -33,7 +30,7 @@ export class AuthService {
 
     const userWithEmail = await this.usersService.findOne(
       'email',
-      signUpDto.email,
+      signUp.email,
     );
     if (userWithEmail) {
       throw new BadRequestException(
@@ -42,10 +39,10 @@ export class AuthService {
     }
 
     const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(signUpDto.password, salt);
+    const hash = bcrypt.hashSync(signUp.password, salt);
 
     await this.usersService.create({
-      ...signUpDto,
+      ...signUp,
       password: hash,
     });
 
