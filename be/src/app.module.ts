@@ -21,12 +21,12 @@ import { join } from 'path';
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
         useNewUrlParser: true,
         useUnifiedTopology: true,
       }),
-      inject: [ConfigService],
     }),
     UsersModule,
     AuthModule,

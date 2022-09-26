@@ -19,24 +19,6 @@ export class Like {
 export const LikeSchema = SchemaFactory.createForClass(Like);
 
 @Schema({ timestamps: true })
-export class Reply {
-  _id?: Types.ObjectId;
-
-  @Prop({ type: SchemaTypes.ObjectId, required: true })
-  who: Types.ObjectId;
-
-  @Prop({ type: String, required: true })
-  content: string;
-
-  @Prop({ type: [LikeSchema], default: [] })
-  like: Like[];
-
-  @Prop({ type: [ReportSchema], default: [] })
-  report: Report[];
-}
-export const ReplySchema = SchemaFactory.createForClass(Reply);
-
-@Schema({ timestamps: true })
 export class DanhGia {
   @Prop({ type: SchemaTypes.ObjectId, required: true })
   who: Types.ObjectId;
@@ -69,9 +51,6 @@ export class Comment {
   @Prop({ type: [LikeSchema], default: [] })
   like: Like[];
 
-  @Prop({ type: [ReplySchema], default: [] })
-  reply: Reply[];
-
   @Prop({ type: [ReportSchema], default: [] })
   report: Report[];
 }
@@ -88,7 +67,7 @@ export class Chuong {
   @Prop({ type: String, required: true })
   content: string;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ type: Number, required: true, default: 0 })
   luotDoc: number;
 
   @Prop({ type: Number, required: true })
