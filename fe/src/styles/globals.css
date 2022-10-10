@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url(antd/dist/antd.css);
+@import url(react-dropdown/style.css);
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
