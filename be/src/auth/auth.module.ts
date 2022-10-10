@@ -19,7 +19,7 @@ import { AtStrategy } from './strategies/at.strategy';
         return {
           secret: configService.get<string>('ACCESS_TOKEN_SECRET'),
           signOptions: {
-            expiresIn: '1d',
+            expiresIn: '10m',
           },
         };
       },

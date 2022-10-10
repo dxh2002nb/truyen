@@ -1,6 +1,5 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Module, ValidationPipe } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { APP_PIPE } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -32,7 +31,6 @@ import { join } from 'path';
     AuthModule,
     TruyensModule,
   ],
-  controllers: [AppController],
   providers: [
     AppService,
     {

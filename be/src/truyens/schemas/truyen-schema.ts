@@ -1,15 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types, SchemaTypes } from 'mongoose';
-
-@Schema({ timestamps: true })
-export class Report {
-  @Prop({ type: SchemaTypes.ObjectId, required: true })
-  who: Types.ObjectId;
-
-  @Prop({ type: String, required: true })
-  content: string;
-}
-export const ReportSchema = SchemaFactory.createForClass(Report);
+import { Status } from '../enums/status.enum';
+import { Type } from '../enums/type.enum';
 
 @Schema({ timestamps: true })
 export class Like {
@@ -17,6 +9,22 @@ export class Like {
   who: Types.ObjectId;
 }
 export const LikeSchema = SchemaFactory.createForClass(Like);
+
+@Schema({ timestamps: true })
+export class Figure {
+  @Prop({ type: String, required: true, unique: true })
+  name: string;
+
+  @Prop({ type: String })
+  title?: string;
+
+  @Prop({ type: String })
+  description?: string;
+
+  @Prop({ type: String })
+  avatar?: string;
+}
+export const FigureSchema = SchemaFactory.createForClass(Figure);
 
 @Schema({ timestamps: true })
 export class DanhGia {
@@ -30,10 +38,10 @@ export const DanhGiaSchema = SchemaFactory.createForClass(DanhGia);
 
 @Schema()
 export class Author {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, unique: true })
   name: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, unique: true })
   slug: string;
 }
 export const AuthorSchema = SchemaFactory.createForClass(Author);
@@ -49,10 +57,7 @@ export class Comment {
   content: string;
 
   @Prop({ type: [LikeSchema], default: [] })
-  like: Like[];
-
-  @Prop({ type: [ReportSchema], default: [] })
-  report: Report[];
+  like?: Like[];
 }
 export const CommentSchema = SchemaFactory.createForClass(Comment);
 
@@ -68,7 +73,7 @@ export class Chuong {
   content: string;
 
   @Prop({ type: Number, required: true, default: 0 })
-  luotDoc: number;
+  luotDoc?: number;
 
   @Prop({ type: Number, required: true })
   soChu: number;
@@ -86,6 +91,9 @@ export class Truyen {
   })
   author: Author;
 
+  @Prop({ type: SchemaTypes.ObjectId, required: true })
+  publisher: Types.ObjectId;
+
   @Prop({ type: String, required: true })
   avatar: string;
 
@@ -95,32 +103,29 @@ export class Truyen {
   @Prop({ type: String })
   description: string;
 
-  @Prop({ type: String })
-  nguonTruyen: string;
-
-  @Prop({ type: [String], required: true, default: [] })
+  @Prop({ type: [String], required: true })
   theLoai: string[];
 
-  @Prop({ type: Date })
-  ngayDang: Date;
-
-  @Prop({ type: String })
-  trangThai: string;
-
-  @Prop({ type: [ChuongSchema], required: true, default: [] })
-  danhSachChuong: Chuong[];
+  @Prop({ type: [ChuongSchema], default: [] })
+  danhSachChuong?: Chuong[];
 
   @Prop({ type: [CommentSchema], default: [] })
-  comment: Comment[];
-
-  @Prop({ type: [ReportSchema], default: [] })
-  report: Report[];
+  comment?: Comment[];
 
   @Prop({ type: [DanhGiaSchema], default: [] })
-  danhGia: DanhGia[];
+  danhGia?: DanhGia[];
 
   @Prop({ type: [LikeSchema], default: [] })
-  like: Like[];
+  like?: Like[];
+
+  @Prop({ type: [FigureSchema], default: [] })
+  figure?: Figure[];
+
+  @Prop({ type: String, enum: Type, required: true })
+  type: Type;
+
+  @Prop({ type: String, enum: Status, required: true, default: Status.DangRa })
+  status?: Status;
 }
 export type TruyenDocument = Truyen & Document;
 export const TruyenSchema = SchemaFactory.createForClass(Truyen);

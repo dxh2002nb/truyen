@@ -1,10 +1,9 @@
 import { JwtService } from '@nestjs/jwt';
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcryptjs';
 import { SignUpDto } from './dto/sign-up.dto';
 import { User } from 'src/users/schemas/user.schema';
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -12,58 +11,41 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signUp(signUp: SignUpDto): Promise<string> {
-    const userWithName = await this.usersService.findOne('name', signUp.name);
-    if (userWithName) {
-      throw new BadRequestException('Tên đã tồn tại, vui lòng nhập tên khác');
-    }
-
-    const userWithUsername = await this.usersService.findOne(
-      'username',
-      signUp.username,
-    );
-    if (userWithUsername) {
-      throw new BadRequestException(
-        'Tên tài khoản đã tồn tại, vui lòng nhập tên khác',
-      );
-    }
-
-    const userWithEmail = await this.usersService.findOne(
-      'email',
-      signUp.email,
-    );
-    if (userWithEmail) {
-      throw new BadRequestException(
-        'Email đã được đăng ký, vui lòng nhập email khác',
-      );
-    }
-
+  hashPassword(password: string): string {
     const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(signUp.password, salt);
+    const hash = bcrypt.hashSync(password, salt);
+    return hash;
+  }
+
+  async signUp(signUp: SignUpDto): Promise<void> {
+    const hash = this.hashPassword(signUp.password);
 
     await this.usersService.create({
       ...signUp,
       password: hash,
     });
-
-    return 'Tạo tài khoản thành công';
   }
 
   async signIn(user: User): Promise<any> {
     const payload = {
       name: user.name,
-      username: user.username,
       email: user.email,
       _id: user._id,
     };
 
     const access_token = this.jwtService.sign(payload);
+    const refresh_token = this.jwtService.sign(payload, {
+      secret: process.env.REFRESH_TOKEN_SECRET,
+      expiresIn: '7d',
+    });
 
-    return { access_token };
+    return { access_token, refresh_token };
   }
 
-  async authenticate(username: string, password: string) {
-    const user = await this.usersService.findOne('username', username);
+  async authenticate(email: string, password: string) {
+    const user = await this.usersService.findOne({
+      email,
+    });
     if (user) {
       const isMatch = bcrypt.compareSync(password, user.password);
       if (isMatch) {
