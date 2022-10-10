@@ -1,9 +1,18 @@
 import { TheLoai, TheLoaiDocument } from './schemas/the-loai-schema';
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Chuong, Truyen, TruyenDocument } from './schemas/truyen-schema';
 import { User } from 'src/users/schemas/user.schema';
+import { LayTruyenTheoTheLoaiDto } from './dto/lay-truyen-theo-the-loai.dto';
+import { GetBxhDto } from './dto/get-bxh.dto';
+import { LayDSChuongDto } from './dto/lay-danh-sach-chuong.dto';
+import { LayBinhLuanTruyenDto } from './dto/lay-binh-truyen-truyen.dto';
+import { XoaBinhLuanTruyenDto } from './dto/xoa-binh-luan-truyen.dto';
 
 @Injectable()
 export class TruyensService {
@@ -19,22 +28,15 @@ export class TruyensService {
     return await this.theLoaiModel.find({});
   }
 
-  async layDSTruyenTheoTheLoai(slug: string, page: string, sortBy: string) {
-    const tongTruyen = await this.truyenModel
-      .find({
-        theLoai: slug,
-      })
-      .count();
+  async layTruyenTheoTheLoai(body: LayTruyenTheoTheLoaiDto): Promise<any> {
+    const { page, limit, filter, order } = body;
 
-    const limit = 20;
-    const pageNum = Number(page);
-    const skip = limit * (pageNum - 1);
+    const tongTruyen = await this.truyenModel.find(filter).count();
+
+    const skip = limit * (page - 1);
+
     let sort;
-
-    switch (sortBy) {
-      case 'ngayDang':
-        sort = 'ngayDang';
-        break;
+    switch (order.by) {
       case 'tongLuotDanhGia':
         sort = 'tongLuotDanhGia';
         break;
@@ -50,6 +52,9 @@ export class TruyensService {
       case 'tongBinhLuan':
         sort = 'tongBinhLuan';
         break;
+      case 'chuongMoi':
+        sort = 'danhSachChuong.createdAt';
+        break;
       default:
         sort = 'danhSachChuong.createdAt';
     }
@@ -57,8 +62,9 @@ export class TruyensService {
     const danhSachTruyen = await this.truyenModel.aggregate([
       {
         $match: {
+          ...filter,
           theLoai: {
-            $in: [slug],
+            $in: [filter.theLoai],
           },
         },
       },
@@ -83,7 +89,7 @@ export class TruyensService {
       },
       {
         $sort: {
-          [sort]: -1,
+          [sort]: order.type,
         },
       },
       {
@@ -106,11 +112,9 @@ export class TruyensService {
           author: 1,
           avatar: 1,
           slug: 1,
-          description: 1,
-          trangThai: 1,
-          ngayDang: 1,
-          nguonTruyen: 1,
+          status: 1,
           danhSachTheLoai: 1,
+          type: 1,
           tongChuong: {
             $size: '$danhSachChuong',
           },
@@ -124,15 +128,15 @@ export class TruyensService {
     };
   }
 
-  async getBxh(page: string, sortBy: string) {
-    const tongTruyen = await this.truyenModel.find({}).count();
+  async getBxh(body: GetBxhDto): Promise<any> {
+    const { page, limit, order, filter } = body;
 
-    const limit = 20;
-    const pageNum = Number(page);
-    const skip = limit * (pageNum - 1);
+    const tongTruyen = await this.truyenModel.find(filter).count();
+
+    const skip = limit * (page - 1);
+
     let sort;
-
-    switch (sortBy) {
+    switch (order.by) {
       case 'tongLuotDanhGia':
         sort = 'tongLuotDanhGia';
         break;
@@ -145,11 +149,17 @@ export class TruyensService {
       case 'tongBinhLuan':
         sort = 'tongBinhLuan';
         break;
+      case 'tongLuotDoc':
+        sort = 'tongLuotDoc';
+        break;
       default:
         sort = 'tongLuotDoc';
     }
 
     const danhSachTruyen = await this.truyenModel.aggregate([
+      {
+        $match: filter,
+      },
       {
         $addFields: {
           tongLuotDoc: {
@@ -171,7 +181,7 @@ export class TruyensService {
       },
       {
         $sort: {
-          [sort]: -1,
+          [sort]: order.type,
         },
       },
       {
@@ -194,11 +204,9 @@ export class TruyensService {
           author: 1,
           avatar: 1,
           slug: 1,
-          description: 1,
-          trangThai: 1,
-          ngayDang: 1,
-          nguonTruyen: 1,
+          status: 1,
           danhSachTheLoai: 1,
+          type: 1,
           tongChuong: {
             $size: '$danhSachChuong',
           },
@@ -212,7 +220,7 @@ export class TruyensService {
     };
   }
 
-  async layThongTinTruyen(slug: string) {
+  async layThongTinTruyen(slug: string): Promise<any> {
     const result = await this.truyenModel.aggregate([
       {
         $match: {
@@ -228,16 +236,26 @@ export class TruyensService {
         },
       },
       {
+        $lookup: {
+          from: 'users',
+          localField: 'publisher',
+          foreignField: '_id',
+          as: 'publisher',
+        },
+      },
+      {
         $project: {
           name: 1,
           author: 1,
           avatar: 1,
           slug: 1,
           description: 1,
-          trangThai: 1,
-          ngayDang: 1,
+          status: 1,
+          type: 1,
           danhSachTheLoai: 1,
-          nguonTruyen: 1,
+          'publisher.name': 1,
+          'publisher.avatar': 1,
+          'publisher.slug': 1,
           tongChu: {
             $sum: '$danhSachChuong.soChu',
           },
@@ -256,6 +274,9 @@ export class TruyensService {
           tongLike: {
             $size: '$like',
           },
+          tongNhanVat: {
+            $size: '$figure',
+          },
         },
       },
     ]);
@@ -265,8 +286,7 @@ export class TruyensService {
     return thongTinTruyen;
   }
 
-  async docTruyen(slug: string, chuongSo: string): Promise<Chuong> {
-    const chuongNum = Number(chuongSo);
+  async docTruyen(slug: string, chuongSo: number): Promise<Chuong> {
     const result = await this.truyenModel.aggregate([
       {
         $match: {
@@ -288,7 +308,7 @@ export class TruyensService {
     const truyen = result[0];
 
     const chuong = truyen.danhSachChuong.find(
-      (chuong) => chuong.chuongSo === chuongNum,
+      (chuong) => chuong.chuongSo === chuongSo,
     );
 
     if (chuong) {
@@ -296,7 +316,7 @@ export class TruyensService {
       await this.truyenModel.findOneAndUpdate(
         {
           slug,
-          'danhSachChuong.chuongSo': chuongNum,
+          'danhSachChuong.chuongSo': chuongSo,
         },
         {
           $set: {
@@ -308,19 +328,19 @@ export class TruyensService {
     return chuong;
   }
 
-  async layDanhSachChuong(slug: string, page: string): Promise<any> {
-    const pageNum = Number(page);
-    const limit = 50;
-    const skip = limit * (pageNum - 1);
+  async layDanhSachChuong(body: LayDSChuongDto): Promise<any> {
+    const { page, limit, filter } = body;
+    const skip = limit * (page - 1);
     const truyen = await this.truyenModel.findOne(
       {
-        slug,
+        slug: filter.slug,
       },
       {
         name: 1,
         slug: 1,
         'danhSachChuong.name': 1,
         'danhSachChuong.chuongSo': 1,
+        'danhSachChuong.createdAt': 1,
       },
     );
 
@@ -334,14 +354,14 @@ export class TruyensService {
     };
   }
 
-  async layBinhLuanTruyen(slug: string, page: string): Promise<any> {
-    const pageNum = Number(page);
-    const limit = 50;
-    const skip = limit * (pageNum - 1);
+  async layBinhLuanTruyen(body: LayBinhLuanTruyenDto): Promise<any> {
+    const { page, limit, filter } = body;
+    const skip = limit * (page - 1);
+
     const result = await this.truyenModel.aggregate([
       {
         $match: {
-          slug,
+          slug: filter.slug,
         },
       },
       {
@@ -372,17 +392,23 @@ export class TruyensService {
         $project: {
           'comment.who.name': 1,
           'comment.who._id': 1,
+          'comment.who.slug': 1,
+          'comment.who.avatar': 1,
           'comment._id': 1,
           'comment.content': 1,
+          'comment.createdAt': 1,
           'comment.like': 1,
         },
       },
     ]);
 
     const truyen = result[0];
+    if (!truyen) {
+      throw new NotFoundException();
+    }
     const binhLuan = truyen.comment.slice(skip, skip + limit);
 
-    binhLuan.forEach((comment) => {
+    truyen.comment.forEach((comment) => {
       comment.tongLike = comment.like.length;
       delete comment.like;
     });
@@ -400,8 +426,6 @@ export class TruyensService {
     truyen.comment.push({
       content,
       who: user._id,
-      like: [],
-      report: [],
     });
     await truyen.save();
   }
@@ -470,7 +494,7 @@ export class TruyensService {
     await truyen.save();
   }
 
-  async timKiem(keyword: string, page: string) {
+  async timKiem(keyword: string, page: number, limit: number) {
     const tongTruyen = await this.truyenModel
       .find({
         name: {
@@ -480,9 +504,7 @@ export class TruyensService {
       })
       .count();
 
-    const limit = 20;
-    const pageNum = Number(page);
-    const skip = limit * (pageNum - 1);
+    const skip = limit * (page - 1);
 
     const danhSachTruyen = await this.truyenModel.aggregate([
       {
@@ -525,11 +547,9 @@ export class TruyensService {
           author: 1,
           avatar: 1,
           slug: 1,
-          description: 1,
-          trangThai: 1,
-          ngayDang: 1,
-          nguonTruyen: 1,
+          status: 1,
           danhSachTheLoai: 1,
+          type: 1,
           tongChuong: {
             $size: '$danhSachChuong',
           },
@@ -541,5 +561,22 @@ export class TruyensService {
       tongTruyen,
       danhSachTruyen,
     };
+  }
+
+  async xoaBinhLuanTruyen(body: XoaBinhLuanTruyenDto, user: User) {
+    const truyen = await this.truyenModel.findOne({
+      slug: body.slug,
+    });
+    const index = truyen.comment.findIndex(
+      (comment) =>
+        comment._id.valueOf() === body._id &&
+        comment.who.valueOf() === user._id.valueOf(),
+    );
+    if (index !== -1) {
+      truyen.comment.splice(index, 1);
+    } else {
+      throw new BadRequestException();
+    }
+    await truyen.save();
   }
 }

@@ -19,6 +19,12 @@ export class AuthController {
   @Post('sign-in')
   @UseGuards(LocalAuthGuard)
   async signIn(@GetUser() user: User) {
-    return this.authService.signIn(user);
+    const tokens = await this.authService.signIn(user);
+    return {
+      tokens,
+      user: {
+        role: user.role,
+      },
+    };
   }
 }
